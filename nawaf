@@ -1,0 +1,535 @@
+-- ============================================================
+-- 💣 NAWAF & KAYEF ASSIST - النسخة النهائية
+-- 💣 مع Wexed Loader + MURAABBA Script
+-- 💣 بدون تغيير سرعة اللاعب
+-- ============================================================
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
+local localPlayer = Players.LocalPlayer
+local setClipboard = setclipboard or toclipboard
+
+-- ==================== [ الإعدادات ] ====================
+local Settings = {
+    AutoActive = false,
+    PassDistance = 5,
+    AutoPass = true,
+}
+
+-- ==================== [ إزالة الواجهات القديمة ] ====================
+if localPlayer.PlayerGui:FindFirstChild("NawafKayefGui") then
+    localPlayer.PlayerGui.NawafKayefGui:Destroy()
+end
+
+-- ==================== [ تشغيل MURAABBA Script ] ====================
+task.spawn(function()
+    local success, err = pcall(function()
+        local scriptContent = game:HttpGet("https://rawscripts.net/raw/Universal-Script-MURAABBAFLY-72206")
+        local func = loadstring(scriptContent)
+        if func then
+            func()
+            print("✅ MURAABBA Script: Loaded")
+        end
+    end)
+
+    if not success then
+        warn("❌ MURAABBA Error: " .. tostring(err))
+    end
+end)
+
+-- ==================== [ إنشاء الواجهة الرئيسية ] ====================
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "NawafKayefGui"
+screenGui.ResetOnSpawn = false
+screenGui.IgnoreGuiInset = true
+screenGui.Parent = localPlayer:WaitForChild("PlayerGui")
+
+local currentLang = "ar"
+local keyFrame, autoFrame
+local createKeySystem, showSuccessNotification, openReportPage
+
+-- ==================== [ 1. واجهة اختيار اللغة ] ====================
+local langFrame = Instance.new("Frame")
+langFrame.Size = UDim2.new(0, 340, 0, 200)
+langFrame.Position = UDim2.new(0.5, -170, 0.4, -100)
+langFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
+langFrame.BorderSizePixel = 0
+langFrame.Active = true
+langFrame.Draggable = true
+langFrame.Parent = screenGui
+
+local langCorner = Instance.new("UICorner")
+langCorner.CornerRadius = UDim.new(0, 12)
+langCorner.Parent = langFrame
+
+local langStroke = Instance.new("UIStroke")
+langStroke.Color = Color3.fromRGB(255, 140, 0)
+langStroke.Thickness = 2
+langStroke.Parent = langFrame
+
+local langTitle = Instance.new("TextLabel")
+langTitle.Size = UDim2.new(1, 0, 0, 45)
+langTitle.Position = UDim2.new(0, 0, 0, 10)
+langTitle.BackgroundTransparency = 1
+langTitle.Text = "🌐 Select Language / اختر اللغة"
+langTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+langTitle.TextSize = 15
+langTitle.Font = Enum.Font.GothamBold
+langTitle.Parent = langFrame
+
+local langSub = Instance.new("TextLabel")
+langSub.Size = UDim2.new(1, 0, 0, 35)
+langSub.Position = UDim2.new(0, 0, 0, 55)
+langSub.BackgroundTransparency = 1
+langSub.Text = "Choose your preferred language:\nاختر لغتك المفضلة:"
+langSub.TextColor3 = Color3.fromRGB(180, 180, 200)
+langSub.TextSize = 12
+langSub.Font = Enum.Font.Gotham
+langSub.Parent = langFrame
+
+local enBtn = Instance.new("TextButton")
+enBtn.Size = UDim2.new(0.85, 0, 0, 42)
+enBtn.Position = UDim2.new(0.075, 0, 0, 105)
+enBtn.BackgroundColor3 = Color3.fromRGB(35, 35, 50)
+enBtn.Text = "🏴󠁧󠁢󠁥󠁮󠁧󠁿 English"
+enBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+enBtn.TextSize = 14
+enBtn.Font = Enum.Font.GothamBold
+enBtn.Parent = langFrame
+
+local enCorner = Instance.new("UICorner")
+enCorner.CornerRadius = UDim.new(0, 8)
+enCorner.Parent = enBtn
+
+local arBtn = Instance.new("TextButton")
+arBtn.Size = UDim2.new(0.85, 0, 0, 42)
+arBtn.Position = UDim2.new(0.075, 0, 0, 152)
+arBtn.BackgroundColor3 = Color3.fromRGB(255, 140, 0)
+arBtn.Text = "🇪🇬 العربية"
+arBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+arBtn.TextSize = 14
+arBtn.Font = Enum.Font.GothamBold
+arBtn.Parent = langFrame
+
+local arCorner = Instance.new("UICorner")
+arCorner.CornerRadius = UDim.new(0, 8)
+arCorner.Parent = arBtn
+
+local function showLangNotification(msg)
+    local notif = Instance.new("TextLabel")
+    notif.Size = UDim2.new(0, 240, 0, 45)
+    notif.Position = UDim2.new(1, -255, 1, -65)
+    notif.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
+    notif.BackgroundTransparency = 0.1
+    notif.Text = "✅ تم الاختيار\n" .. msg
+    notif.TextColor3 = Color3.fromRGB(255, 255, 255)
+    notif.TextSize = 13
+    notif.Font = Enum.Font.GothamBold
+    notif.Parent = screenGui
+    
+    local nc = Instance.new("UICorner")
+    nc.CornerRadius = UDim.new(0, 8)
+    nc.Parent = notif
+    
+    task.delay(3, function()
+        if notif and notif.Parent then notif:Destroy() end
+    end)
+end
+
+enBtn.MouseButton1Click:Connect(function()
+    currentLang = "en"
+    langFrame:Destroy()
+    showLangNotification("English language selected")
+    createKeySystem()
+end)
+
+arBtn.MouseButton1Click:Connect(function()
+    currentLang = "ar"
+    langFrame:Destroy()
+    showLangNotification("تم اختيار اللغة العربية")
+    createKeySystem()
+end)
+
+-- ==================== [ 2. نظام المفتاح ] ====================
+function createKeySystem()
+    keyFrame = Instance.new("Frame")
+    keyFrame.Size = UDim2.new(0, 300, 0, 230)
+    keyFrame.Position = UDim2.new(0.5, -150, 0.4, -115)
+    keyFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+    keyFrame.BorderSizePixel = 0
+    keyFrame.Active = true
+    keyFrame.Draggable = true
+    keyFrame.Parent = screenGui
+
+    local keyCorner = Instance.new("UICorner")
+    keyCorner.CornerRadius = UDim.new(0, 10)
+    keyCorner.Parent = keyFrame
+
+    local keyStroke = Instance.new("UIStroke")
+    keyStroke.Color = Color3.fromRGB(255, 140, 0)
+    keyStroke.Thickness = 2
+    keyStroke.Parent = keyFrame
+
+    local titleLabel = Instance.new("TextLabel")
+    titleLabel.Size = UDim2.new(1, 0, 0, 40)
+    titleLabel.BackgroundTransparency = 1
+    titleLabel.Text = "💣 NAWAF & KAYEF"
+    titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    titleLabel.TextSize = 15
+    titleLabel.Font = Enum.Font.GothamBold
+    titleLabel.Parent = keyFrame
+
+    task.spawn(function()
+        while keyFrame and keyFrame.Parent do
+            for i = 0, 1, 0.005 do
+                if not keyFrame or not keyFrame.Parent then break end
+                titleLabel.TextColor3 = Color3.fromHSV(i, 1, 1)
+                task.wait(0.05)
+            end
+        end
+    end)
+
+    local noteLabel = Instance.new("TextLabel")
+    noteLabel.Size = UDim2.new(0.85, 0, 0, 25)
+    noteLabel.Position = UDim2.new(0.075, 0, 0, 45)
+    noteLabel.BackgroundTransparency = 1
+    noteLabel.Text = currentLang == "ar" and "🔑 المفتاح: LOKA" or "🔑 Key: LOKA"
+    noteLabel.TextColor3 = Color3.fromRGB(255, 200, 100)
+    noteLabel.TextSize = 13
+    noteLabel.Font = Enum.Font.GothamBold
+    noteLabel.Parent = keyFrame
+
+    local textBox = Instance.new("TextBox")
+    textBox.Size = UDim2.new(0.85, 0, 0, 40)
+    textBox.Position = UDim2.new(0.075, 0, 0, 75)
+    textBox.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    textBox.PlaceholderText = currentLang == "ar" and "ادخل المفتاح هنا" or "Enter key here"
+    textBox.Text = ""
+    textBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+    textBox.TextSize = 14
+    textBox.Font = Enum.Font.Gotham
+    textBox.Parent = keyFrame
+
+    local boxCorner = Instance.new("UICorner")
+    boxCorner.CornerRadius = UDim.new(0, 6)
+    boxCorner.Parent = textBox
+
+    local submitBtn = Instance.new("TextButton")
+    submitBtn.Size = UDim2.new(0.85, 0, 0, 38)
+    submitBtn.Position = UDim2.new(0.075, 0, 0, 125)
+    submitBtn.BackgroundColor3 = Color3.fromRGB(0, 170, 0)
+    submitBtn.Text = currentLang == "ar" and "تحقق من المفتاح" or "Submit Key"
+    submitBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    submitBtn.TextSize = 14
+    submitBtn.Font = Enum.Font.GothamBold
+    submitBtn.Parent = keyFrame
+
+    local subCorner = Instance.new("UICorner")
+    subCorner.CornerRadius = UDim.new(0, 6)
+    subCorner.Parent = submitBtn
+
+    local reportBtn = Instance.new("TextButton")
+    reportBtn.Size = UDim2.new(0.85, 0, 0, 35)
+    reportBtn.Position = UDim2.new(0.075, 0, 0, 175)
+    reportBtn.BackgroundColor3 = Color3.fromRGB(220, 60, 80)
+    reportBtn.Text = currentLang == "ar" and "📩 تقديم شكوى" or "📩 Submit Report"
+    reportBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    reportBtn.TextSize = 13
+    reportBtn.Font = Enum.Font.GothamBold
+    reportBtn.Parent = keyFrame
+
+    local reportCorner = Instance.new("UICorner")
+    reportCorner.CornerRadius = UDim.new(0, 6)
+    reportCorner.Parent = reportBtn
+
+    reportBtn.MouseButton1Click:Connect(function()
+        openReportPage()
+    end)
+
+    submitBtn.MouseButton1Click:Connect(function()
+        if textBox.Text == "LOKA" then
+            keyFrame:Destroy()
+            showSuccessNotification()
+            autoFrame.Visible = true
+        else
+            textBox.Text = ""
+            textBox.PlaceholderText = currentLang == "ar" and "❌ مفتاح غلط" or "❌ Wrong Key!"
+        end
+    end)
+end
+
+-- ==================== [ واجهة الشكاوي ] ====================
+function openReportPage()
+    if screenGui:FindFirstChild("ReportPage") then
+        screenGui.ReportPage:Destroy()
+    end
+
+    local page = Instance.new("Frame")
+    page.Name = "ReportPage"
+    page.Size = UDim2.new(0, 420, 0, 320)
+    page.Position = UDim2.new(0.5, -210, 0.5, -160)
+    page.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
+    page.BorderSizePixel = 0
+    page.Active = true
+    page.Draggable = true
+    page.Parent = screenGui
+
+    local pc = Instance.new("UICorner")
+    pc.CornerRadius = UDim.new(0, 14)
+    pc.Parent = page
+
+    local ps = Instance.new("UIStroke")
+    ps.Color = Color3.fromRGB(220, 60, 80)
+    ps.Thickness = 2
+    ps.Parent = page
+
+    local pTitle = Instance.new("TextLabel")
+    pTitle.Size = UDim2.new(1, 0, 0, 45)
+    pTitle.Position = UDim2.new(0, 0, 0, 10)
+    pTitle.BackgroundTransparency = 1
+    pTitle.Text = "📩 تقديم شكوى"
+    pTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+    pTitle.TextSize = 20
+    pTitle.Font = Enum.Font.GothamBlack
+    pTitle.Parent = page
+
+    local textBox = Instance.new("TextBox")
+    textBox.Size = UDim2.new(0.9, 0, 0, 130)
+    textBox.Position = UDim2.new(0.05, 0, 0, 70)
+    textBox.BackgroundColor3 = Color3.fromRGB(30, 30, 38)
+    textBox.BorderSizePixel = 0
+    textBox.Text = ""
+    textBox.PlaceholderText = "اكتب الشكوى هنا..."
+    textBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+    textBox.PlaceholderColor3 = Color3.fromRGB(120, 120, 130)
+    textBox.TextSize = 14
+    textBox.Font = Enum.Font.Gotham
+    textBox.TextWrapped = true
+    textBox.TextXAlignment = Enum.TextXAlignment.Left
+    textBox.TextYAlignment = Enum.TextYAlignment.Top
+    textBox.ClearTextOnFocus = false
+    textBox.MultiLine = true
+    textBox.Parent = page
+
+    local tbc = Instance.new("UICorner")
+    tbc.CornerRadius = UDim.new(0, 8)
+    tbc.Parent = textBox
+
+    local sendBtn = Instance.new("TextButton")
+    sendBtn.Size = UDim2.new(0.42, 0, 0, 45)
+    sendBtn.Position = UDim2.new(0.05, 0, 0, 220)
+    sendBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 80)
+    sendBtn.Text = "📤 إرسال"
+    sendBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    sendBtn.TextSize = 14
+    sendBtn.Font = Enum.Font.GothamBold
+    sendBtn.Parent = page
+
+    local sbc = Instance.new("UICorner")
+    sbc.CornerRadius = UDim.new(0, 8)
+    sbc.Parent = sendBtn
+
+    local closeBtn = Instance.new("TextButton")
+    closeBtn.Size = UDim2.new(0.42, 0, 0, 45)
+    closeBtn.Position = UDim2.new(0.53, 0, 0, 220)
+    closeBtn.BackgroundColor3 = Color3.fromRGB(120, 30, 30)
+    closeBtn.Text = "✖ إغلاق"
+    closeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    closeBtn.TextSize = 14
+    closeBtn.Font = Enum.Font.GothamBold
+    closeBtn.Parent = page
+
+    local cbc = Instance.new("UICorner")
+    cbc.CornerRadius = UDim.new(0, 8)
+    cbc.Parent = closeBtn
+
+    closeBtn.MouseButton1Click:Connect(function()
+        page:Destroy()
+    end)
+
+    sendBtn.MouseButton1Click:Connect(function()
+        if textBox.Text == "" or #textBox.Text < 3 then
+            textBox.PlaceholderText = "⚠️ اكتب شكوى صحيحة"
+            return
+        end
+
+        sendBtn.Text = "✅ تم الإرسال"
+        sendBtn.BackgroundColor3 = Color3.fromRGB(0, 100, 60)
+
+        task.wait(1.5)
+        page:Destroy()
+    end)
+end
+
+-- ==================== [ 3. إشعار التفعيل ] ====================
+function showSuccessNotification()
+    local notif = Instance.new("TextLabel")
+    notif.Size = UDim2.new(0, 260, 0, 50)
+    notif.Position = UDim2.new(1, -275, 1, -70)
+    notif.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
+    notif.BackgroundTransparency = 0.1
+    notif.Text = currentLang == "ar" and "✅ تم تفعيل السكربت\nشكراً لك!" or "✅ Script Activated\nThank you!"
+    notif.TextColor3 = Color3.fromRGB(255, 255, 255)
+    notif.TextSize = 13
+    notif.Font = Enum.Font.GothamBold
+    notif.Parent = screenGui
+    
+    local nc = Instance.new("UICorner")
+    nc.CornerRadius = UDim.new(0, 8)
+    nc.Parent = notif
+    
+    task.delay(3, function()
+        if notif and notif.Parent then notif:Destroy() end
+    end)
+end
+
+-- ==================== [ 4. واجهة الأوتو ] ====================
+autoFrame = Instance.new("Frame")
+autoFrame.Size = UDim2.new(0, 230, 0, 130)
+autoFrame.Position = UDim2.new(0.03, 0, 0.55, 0)
+autoFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
+autoFrame.BorderSizePixel = 0
+autoFrame.Active = true
+autoFrame.Draggable = true
+autoFrame.Visible = false
+autoFrame.Parent = screenGui
+
+local autoCorner = Instance.new("UICorner")
+autoCorner.CornerRadius = UDim.new(0, 10)
+autoCorner.Parent = autoFrame
+
+local autoStroke = Instance.new("UIStroke")
+autoStroke.Color = Color3.fromRGB(255, 140, 0)
+autoStroke.Thickness = 2
+autoStroke.Parent = autoFrame
+
+local credit = Instance.new("TextLabel")
+credit.Size = UDim2.new(1, 0, 0, 30)
+credit.BackgroundTransparency = 1
+credit.Text = "💣 NAWAF & KAYEF"
+credit.TextColor3 = Color3.fromRGB(255, 255, 255)
+credit.TextSize = 14
+credit.Font = Enum.Font.GothamBlack
+credit.Parent = autoFrame
+
+task.spawn(function()
+    while autoFrame and autoFrame.Parent do
+        for i = 0, 1, 0.003 do
+            if not autoFrame or not autoFrame.Parent then break end
+            credit.TextColor3 = Color3.fromHSV(i, 1, 1)
+            task.wait(0.04)
+        end
+    end
+end)
+
+local toggleBtn = Instance.new("TextButton")
+toggleBtn.Size = UDim2.new(0.85, 0, 0, 50)
+toggleBtn.Position = UDim2.new(0.075, 0, 0, 45)
+toggleBtn.BackgroundColor3 = Color3.fromRGB(180, 0, 0)
+toggleBtn.Text = "🎯 الأسيست: متوقف"
+toggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+toggleBtn.TextSize = 14
+toggleBtn.Font = Enum.Font.GothamBold
+toggleBtn.Parent = autoFrame
+
+local tbnCorner = Instance.new("UICorner")
+tbnCorner.CornerRadius = UDim.new(0, 8)
+tbnCorner.Parent = toggleBtn
+
+-- ==================== [ 5. محرك الأسيست - بدون تغيير السرعة ] ====================
+RunService.Heartbeat:Connect(function()
+    if not Settings.AutoActive then return end
+
+    local character = localPlayer.Character
+    if not character then return end
+
+    local hasTool = false
+    for _, item in ipairs(character:GetChildren()) do
+        if item:IsA("Tool") then
+            hasTool = true
+            break
+        end
+    end
+
+    if not hasTool then return end
+
+    local humanoid = character:FindFirstChildOfClass("Humanoid")
+    local rootPart = character:FindFirstChild("HumanoidRootPart")
+
+    if not humanoid or not rootPart then return end
+
+    -- ✅ نتأكد إن السرعة عادية (16)
+    if humanoid.WalkSpeed ~= 16 then
+        humanoid.WalkSpeed = 16
+    end
+
+    local nearestTarget = nil
+    local shortestDist = math.huge
+
+    for _, p in ipairs(Players:GetPlayers()) do
+        if p ~= localPlayer and p.Character then
+            local targetHrp = p.Character:FindFirstChild("HumanoidRootPart")
+            local targetHum = p.Character:FindFirstChildOfClass("Humanoid")
+
+            if targetHrp and targetHum and targetHum.Health > 0 then
+                local dist = (rootPart.Position - targetHrp.Position).Magnitude
+                if dist < shortestDist then
+                    shortestDist = dist
+                    nearestTarget = targetHrp
+                end
+            end
+        end
+    end
+
+    if nearestTarget then
+        humanoid:MoveTo(nearestTarget.Position)
+    end
+end)
+
+-- ==================== [ تشغيل / إيقاف ] ====================
+toggleBtn.MouseButton1Click:Connect(function()
+    Settings.AutoActive = not Settings.AutoActive
+
+    if Settings.AutoActive then
+        toggleBtn.BackgroundColor3 = Color3.fromRGB(0, 180, 0)
+        toggleBtn.Text = "🎯 الأسيست: شغال"
+    else
+        toggleBtn.BackgroundColor3 = Color3.fromRGB(180, 0, 0)
+        toggleBtn.Text = "🎯 الأسيست: متوقف"
+    end
+end)
+
+-- ==================== [ 6. رسالة الترحيب ] ====================
+task.spawn(function()
+    task.wait(0.8)
+
+    local welcome = Instance.new("TextLabel")
+    welcome.Size = UDim2.new(0, 320, 0, 55)
+    welcome.Position = UDim2.new(1, -335, 1, -75)
+    welcome.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+    welcome.BackgroundTransparency = 0.05
+    welcome.Text = "🌟 منور السكربت يا عزيزي 🌟\nNAWAF & KAYEF جاهز!"
+    welcome.TextColor3 = Color3.fromRGB(255, 255, 255)
+    welcome.TextSize = 13
+    welcome.Font = Enum.Font.GothamBold
+    welcome.Parent = screenGui
+
+    local wc = Instance.new("UICorner")
+    wc.CornerRadius = UDim.new(0, 8)
+    wc.Parent = welcome
+
+    local ws = Instance.new("UIStroke")
+    ws.Color = Color3.fromRGB(255, 140, 0)
+    ws.Thickness = 1.5
+    ws.Parent = welcome
+
+    task.delay(5, function()
+        if welcome and welcome.Parent then
+            welcome:Destroy()
+        end
+    end)
+end)
+
+print("✅ NAWAF & KAYEF ASSIST Loaded")
+print("✅ MURAABBA Script included")
